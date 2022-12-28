@@ -28,6 +28,7 @@ class UartReadLineSensor : public Component, public UARTDevice, public Sensor {
           if (rc == marker3) {
             waitingForSecondMarker = false;
             waitingForThirdMarker = false;
+            //Read the voltage from the byte stream. ** this is big endian in the byte stream
             voltage = (int)(read() << 8 | read());
 
             //Iterate over 32 channels of abs data. skip 5*48 bytes to read net instead
@@ -37,7 +38,7 @@ class UartReadLineSensor : public Component, public UARTDevice, public Sensor {
                 rc = read();
                 uintbuf[i] = rc;
               }
-              //Cast the car buffer to a zero padded uint64
+              //Cast the char buffer to a zero padded uint64 ** these are little endian in the byte stream and little endian on the ESP
               wh = *(uint64*)uintbuf;
               //Convert from wattseconds to watthours
               wh /= 3600;
