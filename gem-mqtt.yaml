@@ -1,0 +1,85 @@
+substitutions:
+  friendly_name: GEM MQTT Publisher
+
+esphome:
+  name: gem-mqtt
+  includes:
+    - gem-mqtt.h
+
+esp8266:
+  board: d1_mini
+
+# Enable logging to mqtt debug topic
+logger:
+  baud_rate: 0
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Gem-MQTT Fallback Hotspot"
+    password: !secret hotspot_password
+
+captive_portal:
+
+mqtt:
+  id: mqtt_client
+  broker: 192.168.1.6
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+uart:
+  id: uart_bus
+  tx_pin: 1
+  rx_pin: 3
+  baud_rate: 119200
+  rx_buffer_size: 1024
+
+# Sync time with Home Assistant.
+# time:
+#   - platform: homeassistant
+#     id: homeassistant_time
+
+# Text sensors with general information.
+text_sensor:
+  # Expose ESPHome version as sensor.
+  - platform: version
+    name: ${friendly_name} ESPHome Version
+  # Expose WiFi information as sensors.
+  - platform: wifi_info
+    ip_address:
+      name: ${friendly_name} IP
+    ssid:
+      name: ${friendly_name} SSID
+    bssid:
+      name: ${friendly_name} BSSID
+
+# Sensors with general information.
+sensor:
+  # reads voltage from UART message. custom function also publishes all the individual channels
+  - platform: custom
+    lambda: |-
+      auto my_custom_sensor = new UartReadLineSensor(id(uart_bus));
+      App.register_component(my_custom_sensor);
+      return {my_custom_sensor};
+    sensors:
+      id: "gem_voltage"
+      name: "${friendly_name} Voltage"
+      filters: [multiply: 0.1]
+      accuracy_decimals: 1
+      unit_of_measurement: "V"
+      
+
+  # Uptime sensor.
+  - platform: uptime
+    name: ${friendly_name} Uptime
+
+  # WiFi Signal sensor.
+  - platform: wifi_signal
+    name: ${friendly_name} WiFi Signal
+    update_interval: 60s
